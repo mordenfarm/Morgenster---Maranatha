@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { db } from '../../services/firebase';
@@ -11,7 +12,7 @@ import { useNotification } from '../../context/NotificationContext';
 import LoadingSpinner from '../../components/utils/LoadingSpinner';
 import { 
     Edit, Save, X, User, Phone, Heart, DollarSign, FileClock, CreditCard, PlusCircle, 
-    UserPlus as RegistrationIcon, Calendar, BriefcaseMedical, Stethoscope, HeartPulse, 
+    UserPlus as RegistrationIcon, Calendar, Briefcase, Stethoscope, HeartPulse, 
     Microscope, Bone, Pill, Clipboard, ClipboardEdit, ClipboardCheck, LogIn, LogOut, Printer, Bed, ChevronDown, FilePlus, AlertCircle
 } from 'lucide-react';
 import MakePaymentModal from '../accounts/MakePaymentModal';
@@ -1356,7 +1357,7 @@ const MedicalHistoryView: React.FC<{patient: Patient, permissions: any, data: an
                 ))}
             </MedicalSection>
 
-            <MedicalSection title="Nurse's Notes" icon={<BriefcaseMedical size={18} className="mr-2 text-lime-400" />} count={nurseNotes.length}
+            <MedicalSection title="Nurse's Notes" icon={<Briefcase size={18} className="mr-2 text-lime-400" />} count={nurseNotes.length}
                 actionButton={<>
                     {permissions.canAddNurseNote && <button onClick={() => openClinicalNoteModal('nurse')} className="text-sm flex items-center gap-1 text-sky-500 hover:underline"><PlusCircle size={14}/>Add Nurse Note</button>}
                 </>}>
