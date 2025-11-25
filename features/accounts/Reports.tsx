@@ -578,7 +578,7 @@ const Reports: React.FC = () => {
                     break;
                 
                 case 'patients_served':
-                    const servedPatientIds = [...new Set(billsInRange.map(b => b.patientId))].length;
+                    const servedPatientIds = [...new Set(billsInRange.map(b => b.patientId))];
                     const servedPatientsData = allPatients
                         .filter(p => servedPatientIds.includes(p.id!))
                         .map(p => ({

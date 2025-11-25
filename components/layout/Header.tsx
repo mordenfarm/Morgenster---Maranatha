@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Menu, Bell } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Menu, Bell, WifiOff } from 'lucide-react';
 import { useNavigate, NavLink } from 'react-router-dom';
 import { auth } from '../../services/firebase';
 import Modal from '../utils/Modal';
@@ -16,6 +16,20 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen, unreadCount, unreadMess
   const navigate = useNavigate();
   const [isLogoutModalOpen, setLogoutModalOpen] = useState(false);
   const { userProfile } = useAuth();
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const handleLogout = async () => {
     await auth.signOut();
@@ -44,6 +58,13 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen, unreadCount, unreadMess
           </div>
         </div>
         <div className="flex items-center space-x-6">
+          {!isOnline && (
+            <div className="flex items-center text-yellow-500 bg-yellow-900/20 px-3 py-1 rounded-full border border-yellow-700/50 animate-pulse">
+              <WifiOff size={16} className="mr-2" />
+              <span className="text-xs font-semibold">Offline Mode</span>
+            </div>
+          )}
+
           <NavLink to="/notifications" className="text-gray-400 hover:text-white notification-badge-container" aria-label="View notifications">
             <Bell size={24} />
             {unreadCount > 0 && (
