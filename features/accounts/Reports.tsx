@@ -810,7 +810,7 @@ const Reports: React.FC = () => {
                     >
                         <div>
                             <div className="flex items-start gap-4">
-                                <div className="text-sky-400">{React.cloneElement(report.icon as React.ReactElement, { size: 24 })}</div>
+                                <div className="text-sky-400">{React.cloneElement(report.icon as React.ReactElement<any>, { size: 24 })}</div>
                                 <div>
                                     <h2 className="text-xl font-semibold text-white">{report.title}</h2>
                                     <p className="text-sm text-gray-400 mt-1">{report.description}</p>

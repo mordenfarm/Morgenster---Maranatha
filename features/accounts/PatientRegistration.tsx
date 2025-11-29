@@ -24,7 +24,7 @@ const nationalities = [
 const Section: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode }> = ({ title, icon, children }) => (
   <div className="mb-8 bg-[#161B22] border border-gray-700 p-6 rounded-xl shadow-lg relative overflow-hidden group">
     <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-        {React.cloneElement(icon as React.ReactElement, { size: 100 })}
+        {React.cloneElement(icon as React.ReactElement<any>, { size: 100 })}
     </div>
     <h2 className="text-xl font-bold text-sky-400 mb-6 flex items-center gap-3 border-b border-gray-700 pb-3">
       {icon} {title}
