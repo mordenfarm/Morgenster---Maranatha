@@ -47,6 +47,7 @@ export interface InventoryItem {
   name: string;
   category: string;
   quantity: number;
+  totalStockReceived?: number; // For tracking historical "Stock In"
   unitPrice: number;
   lowStockThreshold: number;
   supplier?: string;
@@ -54,11 +55,28 @@ export interface InventoryItem {
   updatedAt: any; // Firestore Timestamp
 }
 
+export interface InventoryLog {
+  id: string;
+  itemId: string;
+  itemName: string;
+  type: 'Restock' | 'Correction' | 'Sale';
+  changeAmount: number; // Positive for add, negative for remove
+  previousQuantity: number;
+  newQuantity: number;
+  userId: string;
+  userName: string;
+  timestamp: any; // Firestore Timestamp
+  notes?: string;
+}
+
 export interface Patient {
     id?: string;
     hospitalNumber: string;
     name: string;
     surname: string;
+    nationalId?: string; // Added National ID
+    nationality: string; // Added Nationality
+    passportNumber?: string; // Added Passport Number
     dateOfBirth: string;
     age: number;
     maritalStatus: string;

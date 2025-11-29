@@ -1,10 +1,11 @@
+
 import React, { useEffect, useState } from 'react';
 import { db } from '../../services/firebase';
 import { Bill, Payment, UserProfile, Patient } from '../../types';
 import LoadingSpinner from '../../components/utils/LoadingSpinner';
 // FIX: Updated react-router-dom import for v5 compatibility.
 import { Link } from 'react-router-dom';
-import { DollarSign, FileText, Clock, UserPlus } from 'lucide-react';
+import { DollarSign, FileText, Clock, UserPlus, ArrowRight } from 'lucide-react';
 import { useNotification } from '../../context/NotificationContext';
 import firebase from 'firebase/compat/app';
 
@@ -120,13 +121,11 @@ const DepartmentActivity: React.FC = () => {
     }, [addNotification]);
     
     const ActivityIcon = ({ type }: { type: Activity['type']}) => {
+        const size = 16;
         switch (type) {
-            case 'Bill':
-                return <div className="dept-activity-icon bg-blue-900/50 text-blue-400"><FileText size={16} /></div>;
-            case 'Payment':
-                return <div className="dept-activity-icon bg-green-900/50 text-green-400"><DollarSign size={16} /></div>;
-            case 'Registration':
-                return <div className="dept-activity-icon bg-purple-900/50 text-purple-400"><UserPlus size={16} /></div>;
+            case 'Bill': return <FileText size={size} className="text-blue-400" />;
+            case 'Payment': return <DollarSign size={size} className="text-green-400" />;
+            case 'Registration': return <UserPlus size={size} className="text-purple-400" />;
             default: return null;
         }
     }
@@ -135,24 +134,63 @@ const DepartmentActivity: React.FC = () => {
 
     return (
         <div className="bg-[#161B22] border border-gray-700 p-6 rounded-lg shadow-md">
-            <div className="overflow-x-auto">
-                <ul className="space-y-4">
+            <div className="relative">
+                {/* Vertical timeline line */}
+                <div className="absolute left-4 top-2 bottom-2 w-0.5 bg-gray-700 rounded-full"></div>
+                
+                <ul className="space-y-6 relative">
                     {activities.map(activity => (
-                        <li key={activity.id} className="flex items-center space-x-4 p-3 rounded-lg hover:bg-gray-800/50 transition-colors">
-                            <ActivityIcon type={activity.type} />
-                            <div className="flex-1">
-                                <p className="text-sm font-medium text-white">
-                                    {activity.type === 'Bill' && `New bill for `}
-                                    {activity.type === 'Payment' && `Payment received from `}
-                                    {activity.type === 'Registration' && `New patient registered: `}
-                                    <Link to={`/patients/${activity.patientId}`} className="font-semibold hover:underline">{activity.patientName}</Link>
-                                    {activity.type !== 'Registration' && ` for $${activity.amount?.toFixed(2)}`}
-                                </p>
-                                <p className="text-xs text-gray-400">
-                                    <span className="flex items-center"><Clock size={12} className="mr-1.5" /> {activity.date.toLocaleString()} by {activity.processedByName}</span>
-                                </p>
+                        <li key={activity.id} className="relative flex items-start pl-12 group">
+                            {/* Icon Node */}
+                            <div className="absolute left-0 top-0 flex items-center justify-center w-8 h-8 rounded-full bg-[#161B22] border-2 border-gray-700 group-hover:border-sky-500 group-hover:shadow-md group-hover:shadow-sky-900/20 transition-all z-10">
+                                <ActivityIcon type={activity.type} />
                             </div>
-                            {activity.type === 'Bill' && <Link to={`/bills/${activity.originalId}`} className="text-xs text-sky-500 hover:underline">View Bill</Link>}
+                            
+                            {/* Content Card */}
+                            <div className="flex-1 bg-gray-800/30 p-4 rounded-xl border border-gray-700/50 hover:bg-gray-800 hover:border-gray-600 transition-all duration-200">
+                                <div className="flex justify-between items-start mb-2">
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider border ${
+                                        activity.type === 'Payment' ? 'bg-green-900/20 border-green-900 text-green-400' :
+                                        activity.type === 'Bill' ? 'bg-blue-900/20 border-blue-900 text-blue-400' :
+                                        'bg-purple-900/20 border-purple-900 text-purple-400'
+                                    }`}>
+                                        {activity.type}
+                                    </span>
+                                    <span className="text-xs text-gray-500 flex items-center bg-gray-900/50 px-2 py-1 rounded-md">
+                                        <Clock size={10} className="mr-1.5" />
+                                        {activity.date.toLocaleString()}
+                                    </span>
+                                </div>
+                                
+                                <div>
+                                    <div className="text-sm text-gray-300 flex flex-wrap items-center gap-1">
+                                        {activity.type === 'Bill' && "Generated bill for"}
+                                        {activity.type === 'Payment' && "Payment received from"}
+                                        {activity.type === 'Registration' && "Registered new patient"}
+                                        
+                                        <Link to={`/patients/${activity.patientId}`} className="font-semibold text-white hover:text-sky-400 hover:underline flex items-center gap-1 transition-colors">
+                                            {activity.patientName} <ArrowRight size={12} />
+                                        </Link>
+                                    </div>
+                                    
+                                    {activity.amount !== undefined && (
+                                        <p className={`text-xl font-bold mt-1 ${activity.type === 'Payment' ? 'text-green-400' : 'text-white'}`}>
+                                            ${activity.amount.toFixed(2)}
+                                        </p>
+                                    )}
+                                    
+                                    <div className="mt-3 pt-3 border-t border-gray-700/50 flex justify-between items-center">
+                                        <p className="text-xs text-gray-500">
+                                            Processed by <span className="text-gray-400 font-medium">{activity.processedByName}</span>
+                                        </p>
+                                        {activity.type === 'Bill' && (
+                                            <Link to={`/bills/${activity.originalId}`} className="text-xs font-medium text-sky-500 hover:text-sky-400 hover:underline">
+                                                View Details
+                                            </Link>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
                         </li>
                     ))}
                 </ul>
@@ -161,5 +199,4 @@ const DepartmentActivity: React.FC = () => {
     );
 };
 
-// FIX: Added default export for the component.
 export default DepartmentActivity;

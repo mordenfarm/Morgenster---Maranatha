@@ -3,9 +3,9 @@ import Modal from '../../components/utils/Modal';
 import { useNotification } from '../../context/NotificationContext';
 import { db } from '../../services/firebase';
 import firebase from 'firebase/compat/app';
-import { Patient, Payment, PriceListItem, BillItem, Bill } from '../../types';
+import { Patient, Payment, PriceListItem, BillItem, Bill, InventoryLog } from '../../types';
 import { useAuth } from '../../context/AuthContext';
-import { Search, X } from 'lucide-react';
+import { Search, X, Pill } from 'lucide-react';
 
 interface MakePaymentModalProps {
   isOpen: boolean;
@@ -112,7 +112,7 @@ const MakePaymentModal: React.FC<MakePaymentModalProps> = ({ isOpen, onClose, pa
         const batch = db.batch();
         const patientRef = db.collection('patients').doc(patient.id!);
 
-        // Always create a payment record
+        // 1. Create Payment
         const paymentRef = db.collection('payments').doc();
         const newPayment: Omit<Payment, 'id'> = {
             patientId: patient.id!,
@@ -124,7 +124,7 @@ const MakePaymentModal: React.FC<MakePaymentModalProps> = ({ isOpen, onClose, pa
         };
         batch.set(paymentRef, newPayment);
         
-        // If there are new items, create a bill and update total bill
+        // 2. Create Bill (if items exist)
         if (billItems.length > 0) {
             const billRef = db.collection('bills').doc();
             const newBillTotal = totalBill; 
@@ -137,7 +137,6 @@ const MakePaymentModal: React.FC<MakePaymentModalProps> = ({ isOpen, onClose, pa
                 status = 'Paid';
             }
             
-            // FIX: Add missing 'status' property to the billData object.
             const billData: Omit<Bill, 'id'> = {
                 patientId: patient.id!,
                 patientName: `${patient.name} ${patient.surname}`,
@@ -153,14 +152,45 @@ const MakePaymentModal: React.FC<MakePaymentModalProps> = ({ isOpen, onClose, pa
             };
             batch.set(billRef, billData);
 
-            // Update patient financials considering the new bill
+            // Update patient financials
             batch.update(patientRef, {
                 'financials.totalBill': firebase.firestore.FieldValue.increment(newBillTotal),
                 'financials.amountPaid': firebase.firestore.FieldValue.increment(paymentAmount),
                 'financials.balance': firebase.firestore.FieldValue.increment(newBillTotal - paymentAmount),
             });
+
+            // 3. Update Inventory Stock & Log Change
+            for (const item of billItems) {
+                const inventoryQuery = await db.collection('inventory').where('name', '==', item.description).limit(1).get();
+                if (!inventoryQuery.empty) {
+                    const inventoryDoc = inventoryQuery.docs[0];
+                    const invItem = inventoryDoc.data();
+                    
+                    // Deduct stock
+                    batch.update(inventoryDoc.ref, {
+                        quantity: firebase.firestore.FieldValue.increment(-item.quantity)
+                    });
+
+                    // Log this sale in inventoryLogs
+                    const logRef = db.collection('inventoryLogs').doc();
+                    const logData: Omit<InventoryLog, 'id'> = {
+                        itemId: inventoryDoc.id,
+                        itemName: item.description,
+                        type: 'Sale',
+                        changeAmount: -item.quantity,
+                        previousQuantity: invItem.quantity,
+                        newQuantity: invItem.quantity - item.quantity,
+                        userId: userProfile.id,
+                        userName: `${userProfile.name} ${userProfile.surname}`,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                        notes: `Billed to ${patient.name} ${patient.surname} (${patient.hospitalNumber})`
+                    };
+                    batch.set(logRef, logData);
+                }
+            }
+
         } else {
-            // No new items, just paying off existing balance
+            // No items, just paying balance
             batch.update(patientRef, {
                 'financials.amountPaid': firebase.firestore.FieldValue.increment(paymentAmount),
                 'financials.balance': firebase.firestore.FieldValue.increment(-paymentAmount),
@@ -185,14 +215,14 @@ const MakePaymentModal: React.FC<MakePaymentModalProps> = ({ isOpen, onClose, pa
     <Modal isOpen={isOpen} onClose={handleClose} title={`Make Payment for ${patient.name}`}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="relative">
-            <label htmlFor="itemSearch" className="block text-sm font-medium text-gray-300">Add Service/Item to Bill (Optional)</label>
+            <label htmlFor="itemSearch" className="block text-sm font-medium text-gray-300">Add Service/Item to Bill</label>
             <div className="relative mt-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input 
                     type="text" 
                     name="itemSearch" 
                     id="itemSearch"
-                    placeholder="Search to create a quick bill..." 
+                    placeholder="Search for pills, consultation, etc..." 
                     value={itemSearch} 
                     onChange={(e) => handleItemSearch(e.target.value)} 
                     autoComplete="off"
@@ -216,7 +246,7 @@ const MakePaymentModal: React.FC<MakePaymentModalProps> = ({ isOpen, onClose, pa
                     <thead className="text-xs text-gray-400 uppercase bg-gray-700/50 sticky top-0">
                         <tr>
                             <th className="px-2 py-2 w-2/4">Item</th>
-                            <th className="px-2 py-2 text-center">Qty</th>
+                            <th className="px-2 py-2 text-center">Qty / Pills</th>
                             <th className="px-2 py-2 text-right">Total</th>
                             <th className="px-2 py-2 text-center"></th>
                         </tr>
@@ -226,8 +256,11 @@ const MakePaymentModal: React.FC<MakePaymentModalProps> = ({ isOpen, onClose, pa
                             <tr key={index} className="border-t border-gray-700">
                                 <td className="px-2 py-2 font-medium text-white text-xs">{item.description}</td>
                                 <td className="px-2 py-2">
-                                    <input type="number" value={item.quantity} min="1" onChange={e => updateItemQuantity(index, parseInt(e.target.value) || 1)}
-                                           className="w-14 text-center rounded border-gray-600 bg-gray-900 text-white shadow-sm focus:border-sky-500 focus:ring-sky-500 sm:text-sm" />
+                                    <div className="flex items-center justify-center">
+                                        <input type="number" value={item.quantity} min="1" onChange={e => updateItemQuantity(index, parseInt(e.target.value) || 1)}
+                                            className="w-16 text-center rounded border-gray-600 bg-gray-900 text-white shadow-sm focus:border-sky-500 focus:ring-sky-500 sm:text-sm" />
+                                    </div>
+                                    <p className="text-[9px] text-center mt-0.5 text-gray-500">Enter exact units</p>
                                 </td>
                                 <td className="px-2 py-2 text-right font-semibold text-white text-xs">${item.totalPrice.toFixed(2)}</td>
                                 <td className="px-2 py-2 text-center">

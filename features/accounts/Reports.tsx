@@ -6,6 +6,8 @@ import { useNotification } from '../../context/NotificationContext';
 import LoadingSpinner from '../../components/utils/LoadingSpinner';
 import { BarChart as BarChartIcon, FileSpreadsheet, FileText, ImageIcon, Users, BedDouble, LogOut, UserCheck, DollarSign, CreditCard, AlertTriangle, Banknote, UserRoundCheck, ShoppingCart, Package, ArrowDown, ArrowUp } from 'lucide-react';
 import firebase from 'firebase/compat/app';
+import LineChart from '../../components/charts/LineChart';
+import BarChart from '../../components/charts/BarChart';
 
 type ReportType = 'financial_summary' | 'debtors' | 'top_selling_items' | 'paid_invoices' | 'partially_paid_invoices' | 'admissions' | 'patients_served' | 'patient_census' | 'stock_report';
 type DatePreset = 'today' | 'week' | 'month' | 'year' | 'custom';
@@ -650,33 +652,54 @@ const Reports: React.FC = () => {
     const exportToCSV = () => {
         if (!generatedReport || generatedReport.tables.every(t => t.data.length === 0)) return;
 
-        let csvContent = "";
+        let csvBody = "";
         generatedReport.tables.forEach(table => {
             if (table.data.length === 0) return;
             if (table.title) {
-                csvContent += `"${table.title}"\n`;
+                csvBody += `"${table.title}"\n`;
             }
-            const headers = table.columns.map(c => c.header).join(',');
+            const headers = table.columns.map(c => `"${c.header.replace(/"/g, '""')}"`).join(',');
+            csvBody += `${headers}\n`;
+
             const rows = table.data.map(row => {
                 return table.columns.map(col => {
                     let value = row[col.accessor];
-                    if (col.accessor.toLowerCase().includes('date') && value) {
-                        value = new Date(value).toLocaleString();
-                    } else if (typeof value === 'number' && col.header.includes('($)')) {
-                        value = value.toFixed(2);
+                    
+                    // Handle Firestore Timestamps
+                    if (value && typeof value === 'object' && typeof value.toDate === 'function') {
+                        value = value.toDate();
+                    }
+
+                    // Format Dates
+                    if (value instanceof Date) {
+                        value = value.toLocaleString();
+                    } else if ((String(col.accessor).toLowerCase().includes('date') || col.accessor === 'createdAt') && typeof value === 'string') {
+                         // Try parsing string date
+                         const d = new Date(value);
+                         if (!isNaN(d.getTime())) {
+                             value = d.toLocaleString();
+                         }
+                    }
+                    
+                    // Format Numbers/Currency
+                    if (typeof value === 'number') {
+                         if (col.header.includes('($)')) {
+                             value = value.toFixed(2);
+                         }
                     } else if (typeof value === 'boolean') {
                         value = value ? 'Yes' : 'No';
                     }
+                    
                     return `"${String(value ?? '').replace(/"/g, '""')}"`;
                 }).join(',');
             }).join('\n');
-            csvContent += `${headers}\n${rows}\n\n`;
+            csvBody += `${rows}\n\n`;
         });
         
-        
-        const encodedUri = encodeURI(`data:text/csv;charset=utf-8,${csvContent}`);
+        // Add BOM for Excel UTF-8 compatibility
+        const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + encodeURIComponent(csvBody);
         const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
+        link.setAttribute("href", csvContent);
         link.setAttribute("download", `${generatedReport.type}_report.csv`);
         document.body.appendChild(link);
         link.click();
@@ -727,25 +750,6 @@ const Reports: React.FC = () => {
 
     const formatCurrency = (value: any) => typeof value === 'number' ? `$${value.toFixed(2)}` : value;
     
-    const getSummaryIcon = (key: string) => {
-        const iconProps = { size: 32, className: "text-white" };
-        const containerClass = "p-4 rounded-lg";
-        switch (key) {
-            case 'Total Sales': return <div className={`bg-blue-500 ${containerClass}`}><DollarSign {...iconProps} /></div>;
-            case 'Cash Received': return <div className={`bg-green-500 ${containerClass}`}><Banknote {...iconProps} /></div>;
-            case 'EFT Received': return <div className={`bg-indigo-500 ${containerClass}`}><CreditCard {...iconProps} /></div>;
-            case 'Total Outstanding Balance': return <div className={`bg-red-500 ${containerClass}`}><AlertTriangle {...iconProps} /></div>;
-            case 'Total Registered Patients': return <div className={`bg-blue-500 ${containerClass}`}><Users {...iconProps} /></div>;
-            case 'Currently Admitted': return <div className={`bg-purple-500 ${containerClass}`}><BedDouble {...iconProps} /></div>;
-            case 'Pending Discharge': return <div className={`bg-yellow-500 ${containerClass}`}><LogOut {...iconProps} /></div>;
-            case 'Total Discharged': return <div className={`bg-green-500 ${containerClass}`}><UserCheck {...iconProps} /></div>;
-            case 'Stock Received (Units)': return <div className={`bg-blue-500 ${containerClass}`}><ArrowDown {...iconProps} /></div>;
-            case 'Stock Sold (Units)': return <div className={`bg-orange-500 ${containerClass}`}><ArrowUp {...iconProps} /></div>;
-            case 'Revenue from Stock ($)': return <div className={`bg-teal-500 ${containerClass}`}><DollarSign {...iconProps} /></div>;
-            default: return <div className={`bg-gray-500 ${containerClass}`}><BarChartIcon {...iconProps} /></div>;
-        }
-    }
-
     const getSummaryIconSafe = (key: string) => {
         // FIX: Explicitly define props to any to bypass strict type check if Lucide icon types are mismatched or incomplete in current env.
         const iconProps: any = { size: 32, className: "text-white" };
@@ -865,7 +869,7 @@ const Reports: React.FC = () => {
                                     {getSummaryIconSafe(key)}
                                     <div>
                                         <p className="text-sm text-slate-600 font-medium">{key}</p>
-                                        <p className="text-3xl font-bold text-slate-800 mt-1">{typeof value === 'number' ? (key.includes('Value') || key.includes('Sales') || key.includes('Balance') || key.includes('Received') || key.includes('($)') || key.includes('Revenue')) ? formatCurrency(value) : value.toLocaleString() : value}</p>
+                                        <p className="text-3xl font-bold text-slate-800 mt-1">{typeof value === 'number' ? (String(key).includes('Value') || String(key).includes('Sales') || String(key).includes('Balance') || String(key).includes('Received') || String(key).includes('($)') || String(key).includes('Revenue')) ? formatCurrency(value) : value.toLocaleString() : value}</p>
                                     </div>
                                 </div>
                             ))}
@@ -893,10 +897,10 @@ const Reports: React.FC = () => {
                                                             if (col.accessor === 'isLow') {
                                                                 return cellValue ? <span style={{ color: 'red', fontWeight: 'bold' }}>Low Stock</span> : <span style={{ color: 'green' }}>OK</span>;
                                                             }
-                                                            if (col.accessor.toLowerCase().includes('date') || col.accessor === 'createdAt') {
+                                                            if (String(col.accessor).toLowerCase().includes('date') || col.accessor === 'createdAt') {
                                                                 return cellValue?.toDate ? new Date(cellValue.toDate()).toLocaleDateString() : (cellValue ? new Date(cellValue).toLocaleDateString() : 'N/A');
                                                             }
-                                                            if (col.header.includes('($)')) {
+                                                            if (String(col.header).includes('($)')) {
                                                                 return formatCurrency(cellValue);
                                                             }
                                                             return cellValue;

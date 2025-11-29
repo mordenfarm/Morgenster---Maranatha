@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Role, Ward, Patient, InventoryItem } from '../../types';
-// FIX: Updated react-router-dom import for v5 compatibility.
 import { Link } from 'react-router-dom';
-import { UserPlus, DollarSign, UserCheck, Search, Package, Users } from 'lucide-react';
+import { UserPlus, DollarSign, UserCheck, Search, Package, Users, BedDouble, Zap } from 'lucide-react';
 import DepartmentActivity from './DepartmentActivity';
 import FinancialOverview from './FinancialOverview';
 import AdminDashboard from './AdminDashboard';
@@ -13,13 +12,37 @@ import WardDetailsModal from './WardDetailsModal';
 import LoadingSpinner from '../../components/utils/LoadingSpinner';
 import PatientSearch from './PatientSearch';
 
+// Animated Welcome Toast Component
+const WelcomeToast = ({ name }: { name: string }) => {
+    const [visible, setVisible] = useState(false);
+    const [shouldRender, setShouldRender] = useState(true);
+
+    useEffect(() => {
+        setVisible(true);
+        const hideTimer = setTimeout(() => setVisible(false), 4000);
+        const removeTimer = setTimeout(() => setShouldRender(false), 4600); // Wait for exit animation
+        return () => { clearTimeout(hideTimer); clearTimeout(removeTimer); };
+    }, []);
+
+    if (!shouldRender) return null;
+
+    return (
+        <div className={`welcome-toast ${visible ? 'show' : 'hide'}`}>
+            <div className="p-2 bg-sky-500/20 rounded-full border border-sky-400/50 shadow-[0_0_15px_rgba(56,189,248,0.5)]">
+                <Zap size={24} className="text-sky-400 fill-sky-400" />
+            </div>
+            <div>
+                <p className="text-xs text-sky-200 font-medium uppercase tracking-wider">Welcome back</p>
+                <p className="text-lg font-bold text-white leading-tight">{name}</p>
+            </div>
+        </div>
+    );
+};
 
 const DoctorDashboard = () => {
     const [selectedWard, setSelectedWard] = useState<Ward | null>(null);
     return (
         <div>
-            <h2 className="text-xl font-semibold mb-2 text-white">Welcome, Doctor!</h2>
-            <p className="text-gray-400 mb-6">Quickly find a patient or view bed occupancy.</p>
             <div className="mb-8">
                 <PatientSearch />
             </div>
@@ -35,9 +58,7 @@ const DoctorDashboard = () => {
 
 const AccountsClerkDashboard = () => (
     <div>
-        <h2 className="text-xl font-semibold mb-2 text-white">Welcome, Accounts Clerk!</h2>
-        <p className="text-gray-400 mb-6">What would you like to do today?</p>
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col sm:flex-row gap-4 mt-8">
             <Link to="/accounts/register" className="flex items-center justify-center gap-3 px-6 py-3 bg-sky-600 text-white font-semibold rounded-lg hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-sky-500 transition-colors">
                 <UserPlus size={20} />
                 Register New Patient
@@ -54,8 +75,6 @@ const NurseDashboard = () => {
     const [selectedWard, setSelectedWard] = useState<Ward | null>(null);
     return (
         <div>
-            <h2 className="text-xl font-semibold mb-2 text-white">Welcome, Nurse!</h2>
-            <p className="text-gray-400 mb-6">Find your patient or check ward status.</p>
              <div className="mb-8">
                 <PatientSearch />
             </div>
@@ -68,7 +87,7 @@ const NurseDashboard = () => {
     );
 };
 
-const DefaultDashboard = ({ name }: {name?: string}) => <div>Welcome, {name}! Your dashboard is ready.</div>;
+const DefaultDashboard = () => <div></div>;
 
 const AccountantDashboard = () => {
     const [pendingDischarges, setPendingDischarges] = useState(0);
@@ -82,9 +101,9 @@ const AccountantDashboard = () => {
     }, []);
 
     return (
-      <div>
+      <div className="space-y-8">
         {pendingDischarges > 0 && (
-            <div className="mb-6 bg-yellow-900/20 border border-yellow-700/50 p-4 rounded-lg flex items-center justify-between animate-pulse-slow">
+            <div className="bg-yellow-900/20 border border-yellow-700/50 p-4 rounded-lg flex items-center justify-between animate-pulse-slow">
                 <div className="flex items-center gap-4">
                     <div className="p-3 bg-yellow-900/50 rounded-full text-yellow-400">
                         <UserCheck size={24} />
@@ -102,24 +121,58 @@ const AccountantDashboard = () => {
             </div>
         )}
         
-        <div className="mb-8">
-            <h3 className="text-lg font-semibold text-white mb-3">Bed Occupancy</h3>
+        {/* 1. Financial Overview (Priority) */}
+        <div>
+            <h2 className="text-xl font-semibold mb-4 text-white">Financial Overview</h2>
+            <FinancialOverview />
+        </div>
+
+        {/* 2. Quick Actions (Expanded to 4) */}
+        <div>
+            <h2 className="text-xl font-semibold mb-4 text-white">Quick Actions</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Link to="/accounts/register" className="flex flex-col items-center justify-center p-6 bg-gray-800 border border-gray-700 rounded-xl hover:bg-gray-750 hover:border-sky-500/50 hover:shadow-lg hover:shadow-sky-900/20 transition-all group">
+                    <div className="p-3 bg-sky-900/30 rounded-full text-sky-400 mb-3 group-hover:scale-110 transition-transform">
+                        <UserPlus size={24} />
+                    </div>
+                    <span className="font-semibold text-gray-200">Register Patient</span>
+                </Link>
+                
+                <Link to="/accounts/billing" className="flex flex-col items-center justify-center p-6 bg-gray-800 border border-gray-700 rounded-xl hover:bg-gray-750 hover:border-green-500/50 hover:shadow-lg hover:shadow-green-900/20 transition-all group">
+                    <div className="p-3 bg-green-900/30 rounded-full text-green-400 mb-3 group-hover:scale-110 transition-transform">
+                        <DollarSign size={24} />
+                    </div>
+                    <span className="font-semibold text-gray-200">Manage Billing</span>
+                </Link>
+
+                <Link to="/accounts/discharge-approval" className="flex flex-col items-center justify-center p-6 bg-gray-800 border border-gray-700 rounded-xl hover:bg-gray-750 hover:border-yellow-500/50 hover:shadow-lg hover:shadow-yellow-900/20 transition-all group">
+                    <div className="p-3 bg-yellow-900/30 rounded-full text-yellow-400 mb-3 group-hover:scale-110 transition-transform">
+                        <UserCheck size={24} />
+                    </div>
+                    <span className="font-semibold text-gray-200">Discharge Approval</span>
+                </Link>
+
+                <Link to="/pharmacy/inventory" className="flex flex-col items-center justify-center p-6 bg-gray-800 border border-gray-700 rounded-xl hover:bg-gray-750 hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-900/20 transition-all group">
+                    <div className="p-3 bg-purple-900/30 rounded-full text-purple-400 mb-3 group-hover:scale-110 transition-transform">
+                        <Package size={24} />
+                    </div>
+                    <span className="font-semibold text-gray-200">Inventory</span>
+                </Link>
+            </div>
+        </div>
+
+        {/* 3. Bed Occupancy */}
+        <div>
+            <h3 className="text-lg font-semibold text-white mb-3">Live Bed Occupancy</h3>
             <BedOccupancy onWardClick={setSelectedWard} />
         </div>
 
-        <h2 className="text-xl font-semibold mb-4 text-white">Financial Overview</h2>
-        <FinancialOverview />
-
-        <h2 className="text-xl font-semibold my-4 text-white">Quick Actions</h2>
-        <div className="flex flex-col sm:flex-row gap-4 mb-8">
-            <Link to="/accounts/register" className="flex items-center justify-center gap-3 px-6 py-3 bg-sky-600 text-white font-semibold rounded-lg hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-sky-500 transition-colors">
-                <UserPlus size={20} />
-                Register New Patient
-            </Link>
+        {/* 4. Department Activity */}
+        <div>
+            <h2 className="text-xl font-semibold mb-4 text-white">Department Activity</h2>
+            <DepartmentActivity />
         </div>
-
-        <h2 className="text-xl font-semibold mb-4 text-white">Department Activity</h2>
-        <DepartmentActivity />
+        
         {selectedWard && <WardDetailsModal ward={selectedWard} onClose={() => setSelectedWard(null)} />}
       </div>
     );
@@ -216,11 +269,8 @@ const AdmittedPatientsList: React.FC<{ title?: string; message?: string }> = ({ 
 };
 
 const VitalsCheckerDashboard = () => {
-    const { userProfile } = useAuth();
     return (
         <div>
-            <h2 className="text-xl font-semibold mb-2 text-white">Welcome, {userProfile?.name}!</h2>
-            <p className="text-gray-400 mb-6">Find a patient to start recording vitals.</p>
             <div className="mb-8">
                 <Link to="/accounts/patients" className="inline-flex items-center justify-center gap-3 px-8 py-4 bg-sky-600 text-white font-semibold rounded-lg hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-sky-500 transition-colors text-lg">
                     <Search size={24} />
@@ -233,7 +283,6 @@ const VitalsCheckerDashboard = () => {
 };
 
 const PharmacyDashboard = () => {
-    const { userProfile } = useAuth();
     const [lowStockCount, setLowStockCount] = useState(0);
     const [loading, setLoading] = useState(true);
 
@@ -256,9 +305,6 @@ const PharmacyDashboard = () => {
 
     return (
         <div>
-            <h2 className="text-xl font-semibold mb-2 text-white">Welcome, {userProfile?.name}!</h2>
-            <p className="text-gray-400 mb-6">Manage inventory and patient prescriptions.</p>
-
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Link to="/pharmacy/inventory" className="flex flex-col items-center justify-center p-6 bg-gray-800 text-white font-semibold rounded-lg hover:bg-gray-700 transition-colors">
                     <Package size={32} className="mb-2 text-sky-400" />
@@ -282,7 +328,6 @@ const PharmacyDashboard = () => {
 }
 
 const ClinicalSupportDashboard: React.FC<{ role: Role }> = ({ role }) => {
-    const { userProfile } = useAuth();
     const messageMap: Record<string, string> = {
         [Role.LaboratoryTechnician]: "Review patient charts for new laboratory test orders.",
         [Role.Radiologist]: "Review patient charts for new radiology/x-ray orders.",
@@ -291,8 +336,6 @@ const ClinicalSupportDashboard: React.FC<{ role: Role }> = ({ role }) => {
 
     return (
         <div>
-            <h2 className="text-xl font-semibold mb-2 text-white">Welcome, {userProfile?.name}!</h2>
-            <p className="text-gray-400 mb-6">Your dashboard is ready to assist you.</p>
             <div className="mb-8">
                 <Link to="/accounts/patients" className="inline-flex items-center justify-center gap-3 px-6 py-3 bg-sky-600 text-white font-semibold rounded-lg hover:bg-sky-700 transition-colors">
                     <Search size={20} />
@@ -335,12 +378,13 @@ const Dashboard: React.FC = () => {
       case Role.RehabilitationTechnician:
         return <ClinicalSupportDashboard role={userProfile.role} />;
       default:
-        return <DefaultDashboard name={userProfile.name} />;
+        return <DefaultDashboard />;
     }
   };
 
   return (
     <div>
+      <WelcomeToast name={userProfile ? `${userProfile.name} ${userProfile.surname}` : 'User'} />
       <div className="p-0">
         {renderDashboard()}
       </div>

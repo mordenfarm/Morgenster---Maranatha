@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { db } from '../../services/firebase';
@@ -13,7 +12,7 @@ import LoadingSpinner from '../../components/utils/LoadingSpinner';
 import { 
     Edit, Save, X, User, Phone, Heart, DollarSign, FileClock, CreditCard, PlusCircle, 
     UserPlus as RegistrationIcon, Calendar, Briefcase, Stethoscope, HeartPulse, 
-    Microscope, Bone, Pill, Clipboard, ClipboardEdit, ClipboardCheck, LogIn, LogOut, Printer, Bed, ChevronDown, FilePlus, AlertCircle
+    Microscope, Bone, Pill, Clipboard, ClipboardEdit, ClipboardCheck, LogIn, LogOut, Printer, Bed, ChevronDown, FilePlus, AlertCircle, Fingerprint
 } from 'lucide-react';
 import MakePaymentModal from '../accounts/MakePaymentModal';
 import Modal from '../../components/utils/Modal';
@@ -779,6 +778,7 @@ const PatientProfile: React.FC = () => {
             nokSurname: formData.nokSurname,
             nokPhoneNumber: formData.nokPhoneNumber,
             nokAddress: formData.nokAddress,
+            nationalId: formData.nationalId,
         });
         addNotification('Patient profile updated successfully!', 'success');
         setIsEditing(false);
@@ -871,6 +871,7 @@ const PatientProfile: React.FC = () => {
                     <p><strong>Hospital No:</strong> ${patient.hospitalNumber}</p>
                     <p><strong>DOB:</strong> ${patient.dateOfBirth} (Age: ${patient.age})</p>
                     <p><strong>Gender:</strong> ${patient.gender}</p>
+                    <p><strong>National ID:</strong> ${patient.nationalId || 'N/A'}</p>
                     <p><strong>Marital Status:</strong> ${patient.maritalStatus}</p>
                     <p><strong>Status:</strong> ${patient.status} ${patient.status === 'Admitted' ? `(${patient.currentWardName} - Bed ${patient.currentBedNumber})` : ''}</p>
                 </div>
@@ -1200,6 +1201,12 @@ const PatientProfile: React.FC = () => {
                                 </span>
                             </p>
                         </div>
+                        <div className="col-span-2 border-t border-gray-700 pt-2 mt-2">
+                            <span className="text-gray-400 block flex items-center gap-1"><Fingerprint size={14}/> National ID</span>
+                            <p className="font-semibold text-white">
+                                {patient.nationalId ? patient.nationalId : <span className="text-gray-500 text-xs italic">User created before ID implementation</span>}
+                            </p>
+                        </div>
                     </div>
                 </div>
 
@@ -1208,6 +1215,7 @@ const PatientProfile: React.FC = () => {
                         <div className="space-y-4 pt-6 border-t border-gray-700">
                             <DetailItem label="Date of Birth" value={patient.dateOfBirth} />
                             <DetailItem label="Marital Status" value={patient.maritalStatus} />
+                            <DetailItem label="National ID" name="nationalId" value={formData.nationalId} isEditing={isEditing} onChange={handleChange} icon={<Fingerprint size={16}/>}/>
                         </div>
                         <hr className="border-gray-700"/>
                         <div>

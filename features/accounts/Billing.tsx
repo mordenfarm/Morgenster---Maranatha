@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { db } from '../../services/firebase';
 import { useAuth } from '../../context/AuthContext';
@@ -77,6 +76,17 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, totalBill,
                 'financials.amountPaid': firebase.firestore.FieldValue.increment(amountPaid),
                 'financials.balance': firebase.firestore.FieldValue.increment(balance),
             });
+
+            // Update Inventory Stock if items match
+            for (const item of billItems) {
+                const inventoryQuery = await db.collection('inventory').where('name', '==', item.description).limit(1).get();
+                if (!inventoryQuery.empty) {
+                    const inventoryDoc = inventoryQuery.docs[0];
+                    batch.update(inventoryDoc.ref, {
+                        quantity: firebase.firestore.FieldValue.increment(-item.quantity)
+                    });
+                }
+            }
             
             await batch.commit();
             addNotification('Bill processed successfully!', 'success');
@@ -287,6 +297,17 @@ const Billing: React.FC = () => {
                 'financials.totalBill': firebase.firestore.FieldValue.increment(totalBill),
                 'financials.balance': firebase.firestore.FieldValue.increment(totalBill),
             });
+
+            // Update Inventory Stock if items match
+            for (const item of billItems) {
+                const inventoryQuery = await db.collection('inventory').where('name', '==', item.description).limit(1).get();
+                if (!inventoryQuery.empty) {
+                    const inventoryDoc = inventoryQuery.docs[0];
+                    batch.update(inventoryDoc.ref, {
+                        quantity: firebase.firestore.FieldValue.increment(-item.quantity)
+                    });
+                }
+            }
 
             await batch.commit();
             addNotification('Bill successfully added to patient account on credit.', 'success');
