@@ -124,38 +124,55 @@ const DischargeApproval: React.FC = () => {
                     {patients.map(p => {
                         const hasBalance = p.financials.balance > 0;
                         return (
-                            <div key={p.id} className="discharge-card">
+                            <div key={p.id} className="bg-[#161B22] border border-gray-700 rounded-xl p-6 shadow-md flex flex-col justify-between h-full hover:border-sky-500/50 transition-colors">
                                 <div>
-                                    <h3 className="text-xl font-bold text-white truncate">{p.name} {p.surname}</h3>
-                                    <p className="text-sm text-gray-400">Hosp. No: {p.hospitalNumber}</p>
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div>
+                                            <h3 className="text-xl font-bold text-white truncate">{p.name} {p.surname}</h3>
+                                            <p className="text-sm text-gray-400 font-mono">Hosp. No: {p.hospitalNumber}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-gray-800/50 p-4 rounded-lg mb-6 border border-gray-700/50">
+                                        <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Outstanding Balance</p>
+                                        <h2 className={`text-2xl font-extrabold ${hasBalance ? 'text-red-400' : 'text-green-400'}`}>
+                                            ${p.financials.balance.toFixed(2)}
+                                        </h2>
+                                    </div>
+                                    
+                                    <div className="space-y-3 mb-6 text-sm text-gray-300">
+                                        <div className="flex items-center justify-between border-b border-gray-700/50 pb-2">
+                                            <div className="flex items-center gap-2 text-gray-400"><Receipt size={16} /> Total Bill</div>
+                                            <span className="font-medium text-white">${p.financials.totalBill.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between border-b border-gray-700/50 pb-2">
+                                            <div className="flex items-center gap-2 text-gray-400"><CreditCard size={16} /> Amount Paid</div>
+                                            <span className="font-medium text-white">${p.financials.amountPaid.toFixed(2)}</span>
+                                        </div>
+                                        {p.currentWardName && (
+                                            <div className="flex items-center justify-between pt-1">
+                                                <div className="flex items-center gap-2 text-gray-400"><Bed size={16} /> Location</div>
+                                                <span className="font-medium text-sky-400">{p.currentWardName} <span className="text-gray-500 mx-1">•</span> Bed {p.currentBedNumber}</span>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
-                                <div className="discharge-card-balance">
-                                    <p>Outstanding Balance</p>
-                                    <h2 className={`balance-amount ${hasBalance ? 'text-red-400' : 'text-green-400'}`}>
-                                        ${p.financials.balance.toFixed(2)}
-                                    </h2>
-                                </div>
-                                
-                                <div className="discharge-card-details">
-                                    <div><Receipt size={16} /><span>Total Bill</span><span>${p.financials.totalBill.toFixed(2)}</span></div>
-                                    <div><CreditCard size={16} /><span>Amount Paid</span><span>${p.financials.amountPaid.toFixed(2)}</span></div>
-                                    {p.currentWardName && (
-                                        <div><Bed size={16} /><span>Location</span><span>{p.currentWardName} - Bed {p.currentBedNumber}</span></div>
-                                    )}
-                                </div>
-
-                                <div className="discharge-card-actions">
+                                <div className="grid grid-cols-2 gap-3 mt-auto">
                                     <button 
                                         onClick={() => openModal(p, 'reject')}
-                                        className="flex items-center justify-center gap-2 w-full px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors"
+                                        className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-red-600/90 hover:bg-red-600 rounded-lg transition-colors shadow-sm"
                                     >
                                         <XCircle size={18} /> Reject
                                     </button>
                                     <button
                                         onClick={() => !hasBalance && openModal(p, 'approve')}
                                         disabled={hasBalance}
-                                        className="flex items-center justify-center gap-2 w-full px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
+                                        className={`flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white rounded-lg transition-colors shadow-sm ${
+                                            hasBalance 
+                                            ? 'bg-gray-700 text-gray-400 cursor-not-allowed' 
+                                            : 'bg-green-600 hover:bg-green-500'
+                                        }`}
                                         title={hasBalance ? "Cannot approve with an outstanding balance" : "Approve discharge"}
                                     >
                                         <CheckCircle size={18} /> Approve

@@ -60,11 +60,11 @@ const StockHistoryModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                 <button onClick={() => setActiveTab('billed')} className={`px-4 py-2 ${activeTab === 'billed' ? 'border-b-2 border-sky-500 text-white' : 'text-gray-400'}`}>Billed Items</button>
             </div>
             
-            <div className="max-h-[60vh] overflow-y-auto">
+            <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
                 {loading ? <LoadingSpinner /> : (
                     activeTab === 'logs' ? (
                         <table className="w-full text-sm text-left text-gray-400">
-                            <thead className="text-xs text-gray-400 uppercase bg-gray-800">
+                            <thead className="text-xs text-gray-400 uppercase bg-gray-700 sticky top-0">
                                 <tr>
                                     <th className="px-4 py-3">Date</th>
                                     <th className="px-4 py-3">Item</th>
@@ -76,9 +76,9 @@ const StockHistoryModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                             </thead>
                             <tbody>
                                 {logs.map(log => (
-                                    <tr key={log.id} className="border-b border-gray-700">
+                                    <tr key={log.id} className="border-b border-gray-700 bg-gray-800/50">
                                         <td className="px-4 py-2">{log.timestamp?.toDate ? log.timestamp.toDate().toLocaleString() : 'N/A'}</td>
-                                        <td className="px-4 py-2 text-white">{log.itemName}</td>
+                                        <td className="px-4 py-2 text-white font-medium">{log.itemName}</td>
                                         <td className="px-4 py-2"><span className={`px-2 py-0.5 rounded text-xs ${log.type === 'Restock' ? 'bg-green-900 text-green-300' : log.type === 'Sale' ? 'bg-blue-900 text-blue-300' : 'bg-yellow-900 text-yellow-300'}`}>{log.type}</span></td>
                                         <td className={`px-4 py-2 text-right font-mono ${log.changeAmount > 0 ? 'text-green-400' : 'text-red-400'}`}>{log.changeAmount > 0 ? '+' : ''}{log.changeAmount}</td>
                                         <td className="px-4 py-2 text-right font-mono text-white">{log.newQuantity}</td>
@@ -89,7 +89,7 @@ const StockHistoryModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                         </table>
                     ) : (
                         <table className="w-full text-sm text-left text-gray-400">
-                            <thead className="text-xs text-gray-400 uppercase bg-gray-800">
+                            <thead className="text-xs text-gray-400 uppercase bg-gray-700 sticky top-0">
                                 <tr>
                                     <th className="px-4 py-3">Date</th>
                                     <th className="px-4 py-3">Item Name</th>
@@ -99,9 +99,9 @@ const StockHistoryModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                             </thead>
                             <tbody>
                                 {billedItems.map((item, idx) => (
-                                    <tr key={idx} className="border-b border-gray-700">
+                                    <tr key={idx} className="border-b border-gray-700 bg-gray-800/50">
                                         <td className="px-4 py-2">{item.date.toLocaleString()}</td>
-                                        <td className="px-4 py-2 text-white">{item.name}</td>
+                                        <td className="px-4 py-2 text-white font-medium">{item.name}</td>
                                         <td className="px-4 py-2 text-center text-white">{item.quantity}</td>
                                         <td className="px-4 py-2 text-right text-green-400">${item.amount.toFixed(2)}</td>
                                     </tr>
@@ -218,7 +218,7 @@ const InventoryManagement: React.FC = () => {
 
             <div className="bg-[#161B22] border border-gray-700 rounded-lg shadow-md overflow-x-auto mb-6">
                 <table className="w-full text-sm text-left text-gray-400">
-                    <thead className="text-xs text-gray-400 uppercase bg-gray-700">
+                    <thead className="text-xs text-gray-400 uppercase bg-gray-800 border-b border-gray-700">
                         <tr>
                             <th className="px-6 py-3">Item Name</th>
                             <th className="px-6 py-3">Category</th>
@@ -244,7 +244,7 @@ const InventoryManagement: React.FC = () => {
                                             </span>
                                         )}
                                     </td>
-                                    <td className="px-6 py-4"><Pill size={14} className="inline mr-1"/> {item.category}</td>
+                                    <td className="px-6 py-4"><Pill size={14} className="inline mr-1 text-sky-400"/> {item.category}</td>
                                     <td className="px-6 py-4 text-center text-gray-300">
                                         {item.totalStockReceived ? item.totalStockReceived.toLocaleString() : '-'}
                                     </td>

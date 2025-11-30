@@ -67,7 +67,7 @@ const SelectField: React.FC<{ label: string; name: string; value: string; onChan
 ({ label, name, value, onChange, options, required = false }) => (
     <div>
         <label htmlFor={name} className="block text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wide">{label} {required && <span className="text-red-500">*</span>}</label>
-        <select name={name} id={name} value={value} onChange={onChange} required={required} className="w-full px-3 py-3 border border-gray-600 rounded-md bg-gray-800 text-white modern-select focus:outline-none focus:ring-2 focus:ring-sky-500">
+        <select name={name} id={name} value={value} onChange={onChange} required={required} className="w-full px-3 py-2 border border-gray-600 rounded-md bg-gray-800 text-white modern-select focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer">
             <option value="">Select...</option>
             {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
         </select>
@@ -281,7 +281,7 @@ const PatientRegistration: React.FC = () => {
                                 name="phoneCountryCode" 
                                 value={formData.phoneCountryCode} 
                                 onChange={handleChange} 
-                                className="w-24 px-2 py-3 border border-gray-600 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-sky-500 text-sm"
+                                className="w-24 px-2 py-2 border border-gray-600 rounded-md bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-sky-500 text-sm modern-select"
                             >
                                 {countryCodes.map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
                             </select>

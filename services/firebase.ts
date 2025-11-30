@@ -25,15 +25,20 @@ if (!firebase.apps.length) {
 export const auth = firebase.auth();
 export const db = firebase.firestore();
 
-// Enable Offline Persistence (IndexedDB)
-// This allows the app to work offline and sync changes when back online.
-db.enablePersistence({ synchronizeTabs: true })
-  .catch((err) => {
-    if (err.code == 'failed-precondition') {
-      // Multiple tabs open, persistence can only be enabled in one tab at a time.
-      console.warn('Persistence failed: Multiple tabs open');
-    } else if (err.code == 'unimplemented') {
-      // The current browser does not support all of the features required to enable persistence
-      console.warn('Persistence not supported by browser');
-    }
+// Configure Offline Persistence (IndexedDB)
+// Using modern cache settings to avoid deprecation warnings for enableMultiTabIndexedDbPersistence
+try {
+  db.settings({
+    localCache: firebase.firestore.persistentLocalCache({
+      tabManager: firebase.firestore.persistentMultipleTabManager()
+    })
   });
+} catch (err: any) {
+  if (err.code === 'failed-precondition') {
+      console.warn('Persistence failed: Multiple tabs open');
+  } else if (err.code === 'unimplemented') {
+      console.warn('Persistence not supported by browser');
+  } else {
+      console.warn('Error enabling persistence:', err);
+  }
+}

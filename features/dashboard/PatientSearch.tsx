@@ -70,9 +70,11 @@ const PatientSearch: React.FC = () => {
     };
 
     return (
-        <div className="patient-search-container" ref={searchContainerRef}>
+        <div className="relative w-full max-w-xl" ref={searchContainerRef}>
             <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-5 w-5 text-gray-400" />
+                </div>
                 <input
                     type="text"
                     value={query}
@@ -81,32 +83,52 @@ const PatientSearch: React.FC = () => {
                         handleSearch(e.target.value);
                     }}
                     onFocus={() => setIsFocused(true)}
-                    placeholder="Search for a patient by name or hospital number..."
-                    className="patient-search-input"
+                    placeholder="Search patient by Name or Hospital ID..."
+                    className="modern-input pl-10 pr-10 py-3 w-full"
                 />
                 {query && (
-                    <button onClick={() => { setQuery(''); setResults([]); }} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
+                    <button 
+                        onClick={() => { setQuery(''); setResults([]); }} 
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white"
+                    >
                         <X size={18} />
                     </button>
                 )}
             </div>
-            <div className={`patient-search-results ${isFocused && query.length > 0 ? 'visible' : ''}`}>
-                {loading ? (
-                    <div className="p-4 text-center text-gray-400">Searching...</div>
-                ) : results.length > 0 ? (
-                    results.map(patient => (
-                        <div key={patient.id} onClick={() => handleSelectPatient(patient.id!)} className="patient-search-item">
-                            <div>
-                                <p className="font-semibold text-white">{patient.name} {patient.surname}</p>
-                                <p className="text-xs text-gray-400">Hospital No: {patient.hospitalNumber}</p>
-                            </div>
-                            <span className="text-xs px-2 py-1 bg-gray-700 rounded-full">{patient.status}</span>
-                        </div>
-                    ))
-                ) : query.length > 1 ? (
-                    <div className="p-4 text-center text-gray-500">No patients found.</div>
-                ) : null}
-            </div>
+            
+            {isFocused && (query.length > 0) && (
+                <div className="absolute z-50 w-full mt-2 bg-[#161B22] border border-gray-700 rounded-lg shadow-xl overflow-hidden animate-slide-in-top">
+                    {loading ? (
+                        <div className="p-4 text-center text-gray-400 text-sm">Searching...</div>
+                    ) : results.length > 0 ? (
+                        <ul className="divide-y divide-gray-700">
+                            {results.map(patient => (
+                                <li 
+                                    key={patient.id} 
+                                    onClick={() => handleSelectPatient(patient.id!)} 
+                                    className="p-3 hover:bg-gray-800 cursor-pointer transition-colors"
+                                >
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <p className="font-semibold text-white text-sm">{patient.name} {patient.surname}</p>
+                                            <p className="text-xs text-gray-400 font-mono">{patient.hospitalNumber}</p>
+                                        </div>
+                                        <span className={`text-[10px] px-2 py-0.5 rounded-full border ${
+                                            patient.status === 'Admitted' ? 'bg-blue-900/30 border-blue-800 text-blue-300' :
+                                            patient.status === 'PendingDischarge' ? 'bg-yellow-900/30 border-yellow-800 text-yellow-300' :
+                                            'bg-gray-700/50 border-gray-600 text-gray-400'
+                                        }`}>
+                                            {patient.status}
+                                        </span>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    ) : query.length > 1 ? (
+                        <div className="p-4 text-center text-gray-500 text-sm">No patients found.</div>
+                    ) : null}
+                </div>
+            )}
         </div>
     );
 };

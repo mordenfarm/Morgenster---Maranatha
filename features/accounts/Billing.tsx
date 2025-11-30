@@ -4,7 +4,6 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { Patient, PriceListItem, BillItem, Bill } from '../../types';
 import { Search, X, PlusCircle, DollarSign, FileText, User, CreditCard } from 'lucide-react';
-// FIX: Updated react-router-dom import for v5 compatibility.
 import { Link } from 'react-router-dom';
 import firebase from 'firebase/compat/app';
 import Modal from '../../components/utils/Modal';
@@ -116,12 +115,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, totalBill,
                 <div>
                     <label className="block text-sm font-medium text-gray-300">Amount to Pay ($)</label>
                     <input type="number" value={amountPaid} onChange={e => setAmountPaid(parseFloat(e.target.value) || 0)}
-                           className="mt-1 block w-full rounded-md border-gray-600 bg-gray-800 text-white shadow-sm focus:border-sky-500 focus:ring-sky-500 sm:text-sm" />
+                           className="modern-input" />
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-gray-300">Payment Method</label>
                     <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value as any)}
-                            className="mt-1 block w-full rounded-md border-gray-600 bg-gray-800 text-white shadow-sm focus:border-sky-500 focus:ring-sky-500 sm:text-sm">
+                            className="mt-1 block w-full rounded-md border-gray-600 bg-gray-800 text-white shadow-sm focus:border-sky-500 focus:ring-sky-500 px-3 py-2 modern-select">
                         <option>CASH</option>
                         <option>EFT</option>
                         <option>Mixed</option>
@@ -362,9 +361,9 @@ const Billing: React.FC = () => {
                     </div>
 
                     {/* Itemized List Table */}
-                    <div className="overflow-x-auto mb-4">
+                    <div className="overflow-x-auto mb-4 bg-gray-900/50 rounded-lg border border-gray-700">
                         <table className="w-full text-sm text-left text-gray-400">
-                            <thead className="text-xs text-gray-400 uppercase bg-gray-700">
+                            <thead className="text-xs text-gray-400 uppercase bg-gray-800 border-b border-gray-700">
                                 <tr>
                                     <th className="px-4 py-3 w-2/5">Description</th>
                                     <th className="px-4 py-3 w-1/6 text-center">Qty</th>
@@ -373,21 +372,28 @@ const Billing: React.FC = () => {
                                     <th className="px-4 py-3 w-auto text-center"></th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody className="divide-y divide-gray-700">
                                 {billItems.map((item, index) => (
-                                    <tr key={index} className="border-b border-gray-700">
-                                        <td className="px-4 py-2 font-medium text-white">{item.description}</td>
-                                        <td className="px-4 py-2">
+                                    <tr key={index} className="hover:bg-gray-800/50">
+                                        <td className="px-4 py-3 font-medium text-white">{item.description}</td>
+                                        <td className="px-4 py-3">
                                             <input type="number" value={item.quantity} min="1" onChange={e => updateItemQuantity(index, parseInt(e.target.value) || 1)}
-                                                   className="w-20 text-center rounded-md border-gray-600 bg-gray-800 text-white shadow-sm focus:border-sky-500 focus:ring-sky-500 sm:text-sm" />
+                                                   className="w-20 text-center rounded-md border-gray-600 bg-gray-800 text-white shadow-sm focus:border-sky-500 focus:ring-sky-500 sm:text-sm mx-auto block" />
                                         </td>
-                                        <td className="px-4 py-2 text-right">${item.unitPrice.toFixed(2)}</td>
-                                        <td className="px-4 py-2 text-right font-semibold text-white">${item.totalPrice.toFixed(2)}</td>
-                                        <td className="px-4 py-2 text-center">
-                                            <button onClick={() => removeItem(index)} className="text-red-500 hover:text-red-400"><X size={18} /></button>
+                                        <td className="px-4 py-3 text-right">${item.unitPrice.toFixed(2)}</td>
+                                        <td className="px-4 py-3 text-right font-semibold text-white">${item.totalPrice.toFixed(2)}</td>
+                                        <td className="px-4 py-3 text-center">
+                                            <button onClick={() => removeItem(index)} className="text-red-500 hover:text-red-400 p-1 rounded hover:bg-red-900/20"><X size={18} /></button>
                                         </td>
                                     </tr>
                                 ))}
+                                {billItems.length === 0 && (
+                                    <tr>
+                                        <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                                            No items added to bill yet. Use the search below to add services or products.
+                                        </td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
@@ -396,12 +402,16 @@ const Billing: React.FC = () => {
                     <div className="relative mb-6">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                         <input type="text" placeholder="Search for a service or product to add..." value={itemSearch} onChange={e => handleItemSearch(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-600 rounded-md bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500" />
+                            className="w-full pl-10 pr-4 py-3 border border-gray-600 rounded-md bg-gray-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500" />
                         {itemResults.length > 0 && (
-                            <ul className="absolute z-10 w-full bg-gray-900 border border-gray-600 rounded-md mt-1 shadow-lg max-h-60 overflow-auto">
+                            <ul className="absolute z-20 w-full bg-gray-900 border border-gray-600 rounded-md mt-1 shadow-lg max-h-60 overflow-auto">
                                 {itemResults.map(item => (
-                                    <li key={item.id} onClick={() => addItem(item)} className="cursor-pointer select-none relative py-2 px-4 text-white hover:bg-sky-700">
-                                        <span className="font-normal block truncate">{item.name} (${item.unitPrice.toFixed(2)})</span>
+                                    <li key={item.id} onClick={() => addItem(item)} className="cursor-pointer select-none relative py-3 px-4 text-white hover:bg-sky-700 border-b border-gray-800 last:border-0">
+                                        <div className="flex justify-between">
+                                            <span className="font-normal block truncate">{item.name}</span>
+                                            <span className="text-sky-300 font-bold">${item.unitPrice.toFixed(2)}</span>
+                                        </div>
+                                        <span className="text-xs text-gray-500 block">{item.department}</span>
                                     </li>
                                 ))}
                             </ul>
@@ -410,7 +420,7 @@ const Billing: React.FC = () => {
 
                     {/* Financial Summary */}
                      <div className="flex justify-end mt-6">
-                        <div className="w-full max-w-sm bg-gray-800 p-4 rounded-lg">
+                        <div className="w-full max-w-sm bg-gray-800 p-4 rounded-lg border border-gray-700">
                             <div className="flex justify-between text-2xl">
                                 <span className="font-bold text-sky-400">Total Bill:</span>
                                 <span className="font-extrabold text-white">${totalBill.toFixed(2)}</span>
@@ -423,13 +433,13 @@ const Billing: React.FC = () => {
                         <button 
                             onClick={handleBillOnCredit} 
                             disabled={billItems.length === 0}
-                            className="inline-flex items-center justify-center py-2 px-6 border border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-300 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="inline-flex items-center justify-center py-2 px-6 border border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-300 bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                             <CreditCard className="mr-2" size={20} />
                             Bill on Credit
                         </button>
                         <button onClick={() => setPaymentModalOpen(true)} disabled={billItems.length === 0}
-                            className="inline-flex items-center justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-sky-600 hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-sky-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                            className="inline-flex items-center justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                             <DollarSign className="mr-2" size={20} />
                             Proceed to Payment
                         </button>

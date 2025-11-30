@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../../services/firebase';
 import { Bill, Patient, UserProfile, PriceListItem } from '../../types';
@@ -141,12 +142,14 @@ const AnalyticsDashboard: React.FC = () => {
     if (loading) return <LoadingSpinner />;
 
     const KpiCard = ({ title, value, icon }: { title: string, value: string, icon: React.ReactNode }) => (
-        <div className="kpi-card">
+        <div className="bg-[#161B22] border border-gray-700 p-6 rounded-xl shadow-sm flex flex-col justify-between h-full">
             <div className="flex justify-between items-start">
-                <span className="kpi-label">{title}</span>
-                {icon}
+                <span className="text-sm font-medium text-gray-400">{title}</span>
+                <div className="p-2 bg-gray-800 rounded-lg">
+                    {icon}
+                </div>
             </div>
-            <p className="kpi-value mt-2">{value}</p>
+            <p className="text-2xl font-bold text-white mt-4">{value}</p>
         </div>
     );
     
@@ -174,42 +177,65 @@ const AnalyticsDashboard: React.FC = () => {
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                <KpiCard title="Total Revenue" value={`$${stats.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} icon={<DollarSign size={24} className="text-green-400" />} />
-                <KpiCard title="New Admissions" value={stats.newAdmissions.toLocaleString()} icon={<UserPlus size={24} className="text-sky-400" />} />
-                <KpiCard title="Bills Processed" value={stats.billsProcessed.toLocaleString()} icon={<FileText size={24} className="text-purple-400" />} />
-                <KpiCard title="Avg. Revenue / Patient" value={`$${stats.avgRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} icon={<BarChart2 size={24} className="text-yellow-400" />} />
+                <KpiCard title="Total Revenue" value={`$${stats.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} icon={<DollarSign size={20} className="text-green-400" />} />
+                <KpiCard title="New Admissions" value={stats.newAdmissions.toLocaleString()} icon={<UserPlus size={20} className="text-sky-400" />} />
+                <KpiCard title="Bills Processed" value={stats.billsProcessed.toLocaleString()} icon={<FileText size={20} className="text-purple-400" />} />
+                <KpiCard title="Avg. Revenue / Patient" value={`$${stats.avgRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} icon={<BarChart2 size={20} className="text-yellow-400" />} />
             </div>
             
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <div className="xl:col-span-2 chart-container">
+                <div className="xl:col-span-2 bg-[#161B22] border border-gray-700 p-6 rounded-xl shadow-sm h-[450px] flex flex-col">
                     <h3 className="text-lg font-semibold text-white mb-4">Admission Trends</h3>
-                    <LineChart data={chartData.admissions} />
+                    <div className="flex-1 w-full min-h-0">
+                        <LineChart data={chartData.admissions} />
+                    </div>
                 </div>
-                <div className="chart-container">
+                <div className="bg-[#161B22] border border-gray-700 p-6 rounded-xl shadow-sm h-[450px] flex flex-col">
                     <h3 className="text-lg font-semibold text-white mb-4">Revenue by Department</h3>
-                    <BarChart data={chartData.revenueByDept} />
+                    <div className="flex-1 w-full min-h-0">
+                        <BarChart data={chartData.revenueByDept} />
+                    </div>
                 </div>
             </div>
             
-            <div className="bg-[#161B22] border border-gray-700 p-6 rounded-xl">
-                 <h3 className="text-lg font-semibold text-white mb-4">Staff Productivity</h3>
-                 <div className="overflow-x-auto max-h-96">
+            <div className="bg-[#161B22] border border-gray-700 p-6 rounded-xl shadow-sm">
+                 <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2"><Briefcase size={20} className="text-sky-400"/> Staff Productivity Leaderboard</h3>
+                 <div className="overflow-x-auto max-h-96 rounded-lg border border-gray-700/50">
                     <table className="w-full text-sm text-left text-gray-400">
-                        <thead className="text-xs text-gray-400 uppercase bg-gray-700/50 sticky top-0">
+                        <thead className="text-xs text-gray-400 uppercase bg-gray-800 sticky top-0">
                             <tr>
-                                <th className="px-4 py-3">Staff Member</th>
-                                <th className="px-4 py-3 text-center">Registrations</th>
-                                <th className="px-4 py-3 text-center">Bills Processed</th>
+                                <th className="px-6 py-4 font-medium">Staff Member</th>
+                                <th className="px-6 py-4 text-center">Registrations</th>
+                                <th className="px-6 py-4 text-center">Bills Processed</th>
+                                <th className="px-6 py-4 text-center">Total Activity</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-700">
-                            {chartData.staffProductivity.map((staff, idx) => (
-                                <tr key={idx} className="hover:bg-gray-800">
-                                    <td className="px-4 py-3 font-medium text-white">{staff.name}</td>
-                                    <td className="px-4 py-3 text-center">{staff.registrations}</td>
-                                    <td className="px-4 py-3 text-center">{staff.bills}</td>
+                            {chartData.staffProductivity.length > 0 ? (
+                                chartData.staffProductivity.slice().reverse().map((staff, idx) => (
+                                    <tr key={idx} className="hover:bg-gray-800/50 transition-colors">
+                                        <td className="px-6 py-4 font-medium text-white flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-300 border border-gray-600">
+                                                {idx + 1}
+                                            </div>
+                                            {staff.name}
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className="inline-block px-2 py-1 bg-purple-900/30 text-purple-300 rounded text-xs font-bold">{staff.registrations}</span>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className="inline-block px-2 py-1 bg-blue-900/30 text-blue-300 rounded text-xs font-bold">{staff.bills}</span>
+                                        </td>
+                                        <td className="px-6 py-4 text-center font-bold text-white">
+                                            {staff.registrations + staff.bills}
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={4} className="p-8 text-center text-gray-500">No activity data available for this period.</td>
                                 </tr>
-                            ))}
+                            )}
                         </tbody>
                     </table>
                 </div>

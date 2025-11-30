@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom';
 import { Users, UserPlus, Settings, Activity, ShieldAlert, Database, HeartPulse, BedDouble, LogOut, Search, Mail, Briefcase, Phone, Calendar, Hash, ArrowRight, Bell } from 'lucide-react';
 import { db } from '../../services/firebase';
 import LoadingSpinner from '../../components/utils/LoadingSpinner';
-import { UserProfile, Patient, Ward } from '../../types';
+import { UserProfile, Patient, Ward, Bill, Payment, InventoryItem } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import BedOccupancy from './BedOccupancy';
 import WardDetailsModal from './WardDetailsModal';
 import UserActivityModal from '../admin/UserActivityModal';
+import { useNotification } from '../../context/NotificationContext';
 
 interface AdminStats {
   totalUsers: number;
@@ -20,6 +21,7 @@ interface AdminStats {
 
 const AdminDashboard: React.FC = () => {
   const { currentUser } = useAuth();
+  const { addNotification } = useNotification();
   const [stats, setStats] = useState<AdminStats>({
     totalUsers: 0,
     allUsers: [],
@@ -29,6 +31,7 @@ const AdminDashboard: React.FC = () => {
     recentNotifications: []
   });
   const [loading, setLoading] = useState(true);
+  const [backupLoading, setBackupLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedWard, setSelectedWard] = useState<Ward | null>(null);
   const [isActivityModalOpen, setActivityModalOpen] = useState(false);
@@ -108,6 +111,238 @@ const AdminDashboard: React.FC = () => {
     setActivityModalOpen(true);
   };
 
+  const handleSystemBackup = async () => {
+      setBackupLoading(true);
+      addNotification("Starting full system backup generation...", "info");
+
+      try {
+          // 1. Fetch ALL data collections
+          const [usersSnap, patientsSnap, billsSnap, paymentsSnap, inventorySnap, wardsSnap] = await Promise.all([
+              db.collection('users').get(),
+              db.collection('patients').get(),
+              db.collection('bills').get(),
+              db.collection('payments').get(),
+              db.collection('inventory').get(),
+              db.collection('wards').get(),
+          ]);
+
+          const users = usersSnap.docs.map(d => d.data() as UserProfile);
+          const patients = patientsSnap.docs.map(d => d.data() as Patient);
+          const bills = billsSnap.docs.map(d => d.data() as Bill);
+          const payments = paymentsSnap.docs.map(d => d.data() as Payment);
+          const inventory = inventorySnap.docs.map(d => d.data() as InventoryItem);
+          const wards = wardsSnap.docs.map(d => d.data() as Ward);
+
+          // 2. Process Aggregates
+          const totalRevenue = bills.reduce((sum, b) => sum + b.totalBill, 0);
+          const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+          const totalOutstanding = patients.reduce((sum, p) => sum + p.financials.balance, 0);
+          const totalStockValue = inventory.reduce((sum, i) => sum + (i.quantity * i.unitPrice), 0);
+
+          // 3. Construct HTML Template for Word Doc
+          const styles = `
+            body { font-family: 'Segoe UI', Arial, sans-serif; color: #333; line-height: 1.5; }
+            .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #2c3e50; padding-bottom: 20px; }
+            h1 { color: #2c3e50; font-size: 24pt; margin: 0; }
+            h2 { color: #34495e; font-size: 16pt; margin-top: 30px; border-left: 5px solid #3498db; padding-left: 10px; background: #f0f8ff; }
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 10pt; }
+            th { background-color: #2c3e50; color: white; padding: 8px; text-align: left; }
+            td { border: 1px solid #ddd; padding: 8px; }
+            tr:nth-child(even) { background-color: #f9f9f9; }
+            .kpi-box { display: inline-block; width: 30%; background: #eee; padding: 15px; margin: 1%; border: 1px solid #ccc; text-align: center; }
+            .kpi-value { font-size: 14pt; font-weight: bold; display: block; margin-top: 5px; }
+            .timestamp { color: #777; font-size: 9pt; text-align: right; }
+          `;
+
+          const htmlContent = `
+            <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+            <head>
+                <meta charset='utf-8'>
+                <title>Full System Backup</title>
+                <style>${styles}</style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>RCZ MORGENSTER HOSPITAL</h1>
+                    <p>Comprehensive System Data Backup & Report</p>
+                    <p class="timestamp">Generated: ${new Date().toLocaleString()}</p>
+                </div>
+
+                <h2>1. Executive Summary</h2>
+                <div>
+                    <div class="kpi-box">Total Patients<span class="kpi-value">${patients.length}</span></div>
+                    <div class="kpi-box">Total Revenue (Billed)<span class="kpi-value">$${totalRevenue.toFixed(2)}</span></div>
+                    <div class="kpi-box">Total Collected<span class="kpi-value">$${totalPaid.toFixed(2)}</span></div>
+                    <br/>
+                    <div class="kpi-box">Outstanding Balance<span class="kpi-value">$${totalOutstanding.toFixed(2)}</span></div>
+                    <div class="kpi-box">Inventory Value<span class="kpi-value">$${totalStockValue.toFixed(2)}</span></div>
+                    <div class="kpi-box">System Users<span class="kpi-value">${users.length}</span></div>
+                </div>
+
+                <h2>2. Patient Census (All Time)</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Hospital No</th>
+                            <th>Name</th>
+                            <th>Gender</th>
+                            <th>Age</th>
+                            <th>Status</th>
+                            <th>Registration Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${patients.map(p => `
+                            <tr>
+                                <td>${p.hospitalNumber}</td>
+                                <td>${p.name} ${p.surname}</td>
+                                <td>${p.gender}</td>
+                                <td>${p.age}</td>
+                                <td>${p.status}</td>
+                                <td>${new Date(p.registrationDate).toLocaleDateString()}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                <h2>3. Financial Summary - Bills (All Time)</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Bill ID</th>
+                            <th>Patient</th>
+                            <th>Total Bill</th>
+                            <th>Paid</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${bills.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(b => `
+                            <tr>
+                                <td>${new Date(b.date).toLocaleDateString()}</td>
+                                <td>${b.id?.substring(0,8)}</td>
+                                <td>${b.patientName}</td>
+                                <td>$${b.totalBill.toFixed(2)}</td>
+                                <td>$${b.amountPaidAtTimeOfBill.toFixed(2)}</td>
+                                <td>${b.status}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                <h2>4. Financial Summary - Payments (All Time)</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Patient ID</th>
+                            <th>Method</th>
+                            <th>Amount</th>
+                            <th>Processed By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${payments.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(p => `
+                            <tr>
+                                <td>${new Date(p.date).toLocaleDateString()}</td>
+                                <td>${p.patientId}</td>
+                                <td>${p.paymentMethod}</td>
+                                <td>$${p.amount.toFixed(2)}</td>
+                                <td>${p.processedByName}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                <h2>5. Inventory Status</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Item Name</th>
+                            <th>Category</th>
+                            <th>Quantity</th>
+                            <th>Unit Price</th>
+                            <th>Total Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${inventory.map(i => `
+                            <tr>
+                                <td>${i.name}</td>
+                                <td>${i.category}</td>
+                                <td>${i.quantity}</td>
+                                <td>$${i.unitPrice.toFixed(2)}</td>
+                                <td>$${(i.quantity * i.unitPrice).toFixed(2)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                <h2>6. Ward Status</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Ward Name</th>
+                            <th>Total Beds</th>
+                            <th>Price Per Day</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${wards.map(w => `
+                            <tr>
+                                <td>${w.name}</td>
+                                <td>${w.totalBeds}</td>
+                                <td>$${w.pricePerDay.toFixed(2)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                <h2>7. Staff Directory</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Role</th>
+                            <th>Department</th>
+                            <th>Email</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${users.map(u => `
+                            <tr>
+                                <td>${u.name} ${u.surname}</td>
+                                <td>${u.role}</td>
+                                <td>${u.department}</td>
+                                <td>${u.email}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </body>
+            </html>
+          `;
+
+          // 4. Trigger Download
+          const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(htmlContent);
+          const fileDownload = document.createElement("a");
+          document.body.appendChild(fileDownload);
+          fileDownload.href = source;
+          fileDownload.download = `Morgenster_System_Backup_${new Date().toISOString().split('T')[0]}.doc`;
+          fileDownload.click();
+          document.body.removeChild(fileDownload);
+
+          addNotification("Full system report generated and downloaded successfully.", "success");
+
+      } catch (error) {
+          console.error("Backup failed:", error);
+          addNotification("Failed to generate system backup.", "error");
+      } finally {
+          setBackupLoading(false);
+      }
+  };
+
   if (loading) return <LoadingSpinner />;
 
   return (
@@ -124,22 +359,42 @@ const AdminDashboard: React.FC = () => {
         <div className="bg-[#161B22] border border-gray-700 p-6 rounded-xl shadow-sm">
             <h3 className="text-lg font-semibold text-white mb-4">Quick Actions</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                 <Link to="/admin/users" className="p-4 bg-gray-800/50 hover:bg-gray-800 border border-gray-700 hover:border-gray-600 rounded-lg transition-all flex flex-col items-center justify-center text-center gap-2 group">
-                    <Users className="text-sky-400 group-hover:scale-110 transition-transform" size={24} />
-                    <span className="text-sm text-gray-300 font-medium">Manage Users</span>
+                 <Link to="/admin/users" className="p-6 bg-gray-800/50 hover:bg-gray-800 border border-gray-700 hover:border-sky-500/50 rounded-lg transition-all flex flex-col items-center justify-center text-center gap-3 group h-32">
+                    <div className="p-3 bg-gray-800 rounded-full group-hover:bg-sky-900/30 transition-colors">
+                        <Users className="text-sky-400 group-hover:scale-110 transition-transform" size={24} />
+                    </div>
+                    <span className="text-sm text-gray-300 font-medium group-hover:text-white">Manage Users</span>
                  </Link>
-                 <Link to="/accounts/patients" className="p-4 bg-gray-800/50 hover:bg-gray-800 border border-gray-700 hover:border-gray-600 rounded-lg transition-all flex flex-col items-center justify-center text-center gap-2 group">
-                    <HeartPulse className="text-green-400 group-hover:scale-110 transition-transform" size={24} />
-                    <span className="text-sm text-gray-300 font-medium">Manage Patients</span>
+                 <Link to="/accounts/patients" className="p-6 bg-gray-800/50 hover:bg-gray-800 border border-gray-700 hover:border-green-500/50 rounded-lg transition-all flex flex-col items-center justify-center text-center gap-3 group h-32">
+                    <div className="p-3 bg-gray-800 rounded-full group-hover:bg-green-900/30 transition-colors">
+                        <HeartPulse className="text-green-400 group-hover:scale-110 transition-transform" size={24} />
+                    </div>
+                    <span className="text-sm text-gray-300 font-medium group-hover:text-white">Manage Patients</span>
                  </Link>
-                 <Link to="/settings" className="p-4 bg-gray-800/50 hover:bg-gray-800 border border-gray-700 hover:border-gray-600 rounded-lg transition-all flex flex-col items-center justify-center text-center gap-2 group">
-                    <Settings className="text-purple-400 group-hover:scale-110 transition-transform" size={24} />
-                    <span className="text-sm text-gray-300 font-medium">System Settings</span>
+                 <Link to="/settings" className="p-6 bg-gray-800/50 hover:bg-gray-800 border border-gray-700 hover:border-purple-500/50 rounded-lg transition-all flex flex-col items-center justify-center text-center gap-3 group h-32">
+                    <div className="p-3 bg-gray-800 rounded-full group-hover:bg-purple-900/30 transition-colors">
+                        <Settings className="text-purple-400 group-hover:scale-110 transition-transform" size={24} />
+                    </div>
+                    <span className="text-sm text-gray-300 font-medium group-hover:text-white">System Settings</span>
                  </Link>
-                 <div className="p-4 bg-gray-800/50 border border-gray-700 rounded-lg flex flex-col items-center justify-center text-center gap-2 opacity-75">
-                     <Database className="text-gray-400" size={24} />
-                     <span className="text-sm text-gray-300 font-medium">Data Backups</span>
-                 </div>
+                 
+                 {/* Backup Action */}
+                 <button 
+                    onClick={handleSystemBackup} 
+                    disabled={backupLoading}
+                    className="p-6 bg-gray-800/50 hover:bg-gray-800 border border-gray-700 hover:border-sky-500/50 rounded-lg transition-all flex flex-col items-center justify-center text-center gap-3 group h-32 w-full focus:outline-none focus:ring-2 focus:ring-sky-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                 >
+                     <div className="p-3 bg-gray-800 rounded-full group-hover:bg-sky-900/30 transition-colors">
+                        {backupLoading ? (
+                            <Activity className="text-sky-500 animate-spin" size={24} />
+                        ) : (
+                            <Database className="text-gray-400 group-hover:text-sky-400 transition-colors" size={24} />
+                        )}
+                     </div>
+                     <span className="text-sm text-gray-300 font-medium group-hover:text-white">
+                         {backupLoading ? "Generating..." : "Data Backups"}
+                     </span>
+                 </button>
             </div>
         </div>
 

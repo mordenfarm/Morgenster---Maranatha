@@ -1207,9 +1207,12 @@ const PatientProfile: React.FC = () => {
                             </p>
                         </div>
                         <div className="col-span-2 border-t border-gray-700 pt-2 mt-2">
-                            <span className="text-gray-400 block flex items-center gap-1"><Fingerprint size={14}/> National ID</span>
+                            <span className="text-gray-400 block flex items-center gap-1">
+                                <Fingerprint size={14}/> 
+                                {patient.passportNumber ? 'Passport Number' : 'National ID'}
+                            </span>
                             <p className="font-semibold text-white">
-                                {patient.nationalId ? patient.nationalId : <span className="text-gray-500 text-xs italic">User created before ID implementation</span>}
+                                {patient.passportNumber ? patient.passportNumber : (patient.nationalId || <span className="text-gray-500 text-xs italic">User created before ID implementation</span>)}
                             </p>
                         </div>
                     </div>
@@ -1220,7 +1223,11 @@ const PatientProfile: React.FC = () => {
                         <div className="space-y-4 pt-6 border-t border-gray-700">
                             <DetailItem label="Date of Birth" value={patient.dateOfBirth} />
                             <DetailItem label="Marital Status" value={patient.maritalStatus} />
-                            <DetailItem label="National ID" name="nationalId" value={formData.nationalId} isEditing={isEditing} onChange={handleChange} icon={<Fingerprint size={16}/>}/>
+                            {patient.nationality === 'Zimbabwean' ? (
+                                <DetailItem label="National ID" name="nationalId" value={formData.nationalId} isEditing={isEditing} onChange={handleChange} icon={<Fingerprint size={16}/>}/>
+                            ) : (
+                                <DetailItem label="Passport Number" name="passportNumber" value={formData.passportNumber} isEditing={isEditing} onChange={handleChange} icon={<Fingerprint size={16}/>}/>
+                            )}
                         </div>
                         <hr className="border-gray-700"/>
                         <div>
