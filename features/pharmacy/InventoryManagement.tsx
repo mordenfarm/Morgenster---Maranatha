@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { db } from '../../services/firebase';
 import { InventoryItem, Role, InventoryLog, BillItem, Bill } from '../../types';
 import LoadingSpinner from '../../components/utils/LoadingSpinner';
@@ -133,7 +133,7 @@ const InventoryManagement: React.FC = () => {
 
     const canDelete = useMemo(() => userProfile?.role === Role.Accountant || userProfile?.role === Role.Admin, [userProfile]);
 
-    const fetchItems = async () => {
+    const fetchItems = useCallback(async () => {
         setLoading(true);
         try {
             const snapshot = await db.collection('inventory').orderBy('name').get();
@@ -145,11 +145,11 @@ const InventoryManagement: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [addNotification]);
 
     useEffect(() => {
         fetchItems();
-    }, []);
+    }, [fetchItems]);
 
     const filteredItems = useMemo(() => {
         if (!searchQuery) return items;

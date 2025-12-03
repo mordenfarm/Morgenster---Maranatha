@@ -708,7 +708,10 @@ const Reports: React.FC = () => {
 
     const exportToPNG = () => {
         if (!reportContainerRef.current) return;
-        html2canvas(reportContainerRef.current, { backgroundColor: '#ffffff' }).then(canvas => {
+        html2canvas(reportContainerRef.current, { 
+            backgroundColor: '#ffffff',
+            useCORS: true // Added to fix potential CORS warning/error with images
+        }).then(canvas => {
             const link = document.createElement('a');
             link.download = `${generatedReport?.type}_report.png`;
             link.href = canvas.toDataURL('image/png');

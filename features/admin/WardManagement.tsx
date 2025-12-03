@@ -1,5 +1,4 @@
-
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { db } from '../../services/firebase';
 import { Ward, Patient } from '../../types';
 import LoadingSpinner from '../../components/utils/LoadingSpinner';
@@ -104,7 +103,7 @@ const WardManagement: React.FC = () => {
     const [selectedWard, setSelectedWard] = useState<Ward | null>(null);
     const { addNotification } = useNotification();
 
-    const fetchWards = async () => {
+    const fetchWards = useCallback(async () => {
         setLoading(true);
         try {
             const snapshot = await db.collection('wards').orderBy('name').get();
@@ -116,11 +115,11 @@ const WardManagement: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [addNotification]);
 
     useEffect(() => {
         fetchWards();
-    }, []);
+    }, [fetchWards]);
 
     const filteredWards = useMemo(() => {
         if (!searchQuery) return wards;

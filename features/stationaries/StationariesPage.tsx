@@ -106,7 +106,7 @@ const StationariesPage: React.FC = () => {
         {filteredDocuments.map(doc => (
           <div key={doc.id} className="bg-[#161B22] border border-gray-700 rounded-xl p-6 hover:border-sky-500/50 hover:shadow-lg hover:shadow-sky-900/10 transition-all duration-300 group flex flex-col items-center text-center h-full">
             <div className="p-4 bg-gray-800 rounded-full text-sky-400 mb-4 group-hover:scale-110 group-hover:bg-sky-900/20 transition-all duration-300">
-              {React.cloneElement(doc.icon as React.ReactElement, { size: 32 })}
+              {React.cloneElement(doc.icon as React.ReactElement<any>, { size: 32 })}
             </div>
             <h3 className="text-lg font-bold text-white mb-2">{doc.name}</h3>
             <p className="text-sm text-gray-400 mb-6 flex-grow">{doc.description}</p>

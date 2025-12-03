@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { db } from '../../services/firebase';
 import { UserProfile } from '../../types';
 import LoadingSpinner from '../../components/utils/LoadingSpinner';
@@ -35,7 +35,7 @@ const UserManagement: React.FC = () => {
   const { userProfile: currentUserProfile } = useAuth();
 
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
       const usersCollection = db.collection('users');
@@ -48,11 +48,11 @@ const UserManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [addNotification]);
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [fetchUsers]);
 
   const filteredUsers = useMemo(() => {
     if (!searchQuery) return users;

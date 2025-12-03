@@ -1,5 +1,4 @@
-
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { db } from '../../services/firebase';
 import { PriceListItem } from '../../types';
 import LoadingSpinner from '../../components/utils/LoadingSpinner';
@@ -21,7 +20,7 @@ const PriceListManagement: React.FC = () => {
     const [selectedItem, setSelectedItem] = useState<PriceListItem | null>(null);
     const { addNotification } = useNotification();
 
-    const fetchItems = async () => {
+    const fetchItems = useCallback(async () => {
         setLoading(true);
         try {
             const snapshot = await db.collection('priceList').get();
@@ -40,11 +39,11 @@ const PriceListManagement: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [addNotification]);
 
     useEffect(() => {
         fetchItems();
-    }, []);
+    }, [fetchItems]);
 
     const filteredItems = useMemo(() => {
         if (!searchQuery) return items;

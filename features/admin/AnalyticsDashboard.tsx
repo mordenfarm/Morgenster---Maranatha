@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../../services/firebase';
 import { Bill, Patient, UserProfile, PriceListItem } from '../../types';
@@ -95,6 +94,7 @@ const AnalyticsDashboard: React.FC = () => {
         
         // 1. Admissions Trend Data
         const admissionsByDay: { [key: string]: number } = {};
+        // Initialize days
         for (let d = new Date(dateRange.start); d <= dateRange.end; d.setDate(d.getDate() + 1)) {
             admissionsByDay[d.toISOString().split('T')[0]] = 0;
         }
@@ -104,7 +104,9 @@ const AnalyticsDashboard: React.FC = () => {
                 admissionsByDay[dateStr]++;
             }
         });
-        const admissions = Object.entries(admissionsByDay).map(([date, count]) => ({ date, value: count }));
+        const admissions = Object.entries(admissionsByDay)
+            .sort((a,b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
+            .map(([date, count]) => ({ date, value: count }));
 
         // 2. Revenue by Department
         const revenueByDeptMap: { [key: string]: number } = {};
@@ -114,7 +116,9 @@ const AnalyticsDashboard: React.FC = () => {
                 revenueByDeptMap[department] = (revenueByDeptMap[department] || 0) + item.totalPrice;
             });
         });
-        const revenueByDept = Object.entries(revenueByDeptMap).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+        const revenueByDept = Object.entries(revenueByDeptMap)
+            .map(([name, value]) => ({ name, value }))
+            .sort((a, b) => b.value - a.value);
 
         // 3. Staff Productivity
         const staffActivity: { [id: string]: { name: string; registrations: number; bills: number; } } = {};
@@ -186,13 +190,13 @@ const AnalyticsDashboard: React.FC = () => {
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                 <div className="xl:col-span-2 bg-[#161B22] border border-gray-700 p-6 rounded-xl shadow-sm h-[450px] flex flex-col">
                     <h3 className="text-lg font-semibold text-white mb-4">Admission Trends</h3>
-                    <div className="flex-1 w-full min-h-0">
+                    <div className="flex-1 w-full min-h-0 relative">
                         <LineChart data={chartData.admissions} />
                     </div>
                 </div>
                 <div className="bg-[#161B22] border border-gray-700 p-6 rounded-xl shadow-sm h-[450px] flex flex-col">
                     <h3 className="text-lg font-semibold text-white mb-4">Revenue by Department</h3>
-                    <div className="flex-1 w-full min-h-0">
+                    <div className="flex-1 w-full min-h-0 relative">
                         <BarChart data={chartData.revenueByDept} />
                     </div>
                 </div>
