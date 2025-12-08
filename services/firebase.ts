@@ -8,7 +8,7 @@ import "firebase/compat/firestore";
 // you MUST replace these values with the actual configuration from your Firebase project.
 // You can find this in: Project Settings > General > Your apps > Firebase SDK snippet (Config).
 
-const firebaseConfig = {
+
 const firebaseConfig = {
   apiKey: "AIzaSyAptCds-zF3b5i8tTpnJIW16jilX6WZxlM",
   authDomain: "mh-maranatha.firebaseapp.com",
