@@ -9,13 +9,12 @@ import "firebase/compat/firestore";
 // You can find this in: Project Settings > General > Your apps > Firebase SDK snippet (Config).
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAFpCZ5-QZeiyQdwsWiCeCArfJ34dD7b-E",
-  authDomain: "morgensterhospital-8c944.firebaseapp.com",
-  databaseURL: "https://morgensterhospital-8c944-default-rtdb.firebaseio.com",
-  projectId: "morgensterhospital-8c944",
-  storageBucket: "morgensterhospital-8c944.firebasestorage.app",
-  messagingSenderId: "1009717236851",
-  appId: "1:1009717236851:web:dc2ecbbdb6a8f22d294606"
+  apiKey: "AIzaSyDt3C-9X0WKI4iUIJ8sXLCr6fdflmJcYPM",
+  authDomain: "raphamed-f97d4.firebaseapp.com",
+  projectId: "raphamed-f97d4",
+  storageBucket: "raphamed-f97d4.firebasestorage.app",
+  messagingSenderId: "261665309064",
+  appId: "1:261665309064:web:0dec76c91839ac52647a3d"
 };
 // Initialize Firebase
 if (!firebase.apps.length) {
